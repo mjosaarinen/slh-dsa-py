@@ -35,7 +35,7 @@ Another minor aspect that required peeking at the reference code were with the "
 
 ##  Running, Known Answer Tests
 
-The known answer testbench [kat_test.py](kat_test.py)) can be executed via `python3 kat_test.py` and check against the provided. You will need Python3 and hash functions; try `pip3 install pycryptodome` if those are not installed.
+The known answer testbench ([kat_test.py](kat_test.py)) can be executed via `python3 kat_test.py` and check against the provided. You will need Python3 and hash functions; try `pip3 install pycryptodome` if those are not installed.
 
 It takes one or two minutes to print just the KAT checksum for the first vector for each variant, but you may modify the `katnum` variable in [kat_test.py](kat_test.py) to produce hashes of more vectors.
 ```
