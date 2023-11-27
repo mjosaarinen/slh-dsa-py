@@ -66,5 +66,5 @@ d36999edc06c0daeaae9e6346b4b5a5ea9503387fb343bfe869c5ccd0a90c51c SLH-DSA-SHAKE-1
 b399077b5c53daffd830df98dd3953b9db1903a151bc679adff314a93cf808d0 SLH-DSA-SHAKE-256s (1)
 ```
 
-The known answer tests are quite sizeable, so we are providing only SHA256 hashes for [1](kat/kat1-sha256.txt), [10](kat/kat10-sha256.txt), and [100](kat/kat100-sha256.txt) first ones. The [kat](kat) subdirectory also contains full text of the first vector of each response file.
+The known answer tests are quite big, so I'm including just SHA256 hashes for [1](kat/kat1-sha256.txt), [10](kat/kat10-sha256.txt), and [100](kat/kat100-sha256.txt) first ones. The [kat](kat) subdirectory also contains full text of the first vector of each response file.
 

@@ -46,7 +46,7 @@ def test_rsp(iut, katnum=100):
     drbg    = NIST_KAT_DRBG(bytes([i for i in range(48)]))
     kat     = f'# {iut.algname}\n\n'
     for count in range(katnum):
-        print(f'# {count}/{katnum} {iut.stdname}')
+        print(f'# {count}/{katnum} {iut.stdname}', flush=True)
         kat += f'count = {count}\n'
         seed = drbg.random_bytes(48)
         iut.set_random(NIST_KAT_DRBG(seed).random_bytes)
