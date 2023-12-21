@@ -33,7 +33,7 @@ I wrote this implementation "looking at the specification" and had to peek at th
 Another minor aspect that required peeking at the reference code were with the "(ADRS) Member Functions" of type `ADRS.getX()` and `ADRS.setX(Y)` that are very briefly discussed in Section 4.3 of the specification. While Figures 5--8 helped me to decipher these, the spec would benefit from an explicit table for the functions. The member functions and the compressed serialization used by SHA2 variants are implemented by a helper class `ADSR` in the implementation ([slh_dsa.py](slh_dsa.py)).
 
 
-##  Running, Known Answer Tests
+##  Running Known Answer Tests
 
 The known answer testbench ([kat_test.py](kat_test.py)) can be executed via `python3 kat_test.py` and check against the provided. You will need Python3 and hash functions; try `pip3 install pycryptodome` if those are not installed.
 

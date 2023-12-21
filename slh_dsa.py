@@ -44,7 +44,7 @@ class ADRS:
         self.a[24:28] = x.to_bytes(4, byteorder='big')
 
     def set_chain_address(self, x):
-        """ Set WOTS+ chain address -- Fig 7."""
+        """ Set WOTS+ chain address."""
         self.a[24:28] = x.to_bytes(4, byteorder='big')
 
     def set_tree_index(self, x):
@@ -72,7 +72,7 @@ class ADRS:
         return self.a
 
     def adrsc(self):
-        """ Compressed address ADRDc used for SHA-2."""
+        """ Compressed address ADRDc used with SHA-2."""
         return self.a[3:4] + self.a[8 : 16] + self.a[19:20] + self.a[20:32]
 
 
@@ -102,23 +102,23 @@ class SLH_DSA:
             self.h_msg      = self.shake_h_msg
             self.prf        = self.shake_prf
             self.prf_msg    = self.shake_prf_msg
-            self.f          = self.shake_f
-            self.hh         = self.shake_f
-            self.tl         = self.shake_f
+            self.h_f            = self.shake_f
+            self.h_h            = self.shake_f
+            self.h_t            = self.shake_f
         elif hashname == 'SHA2' and self.n == 16:
             self.h_msg      = self.sha256_h_msg
             self.prf        = self.sha256_prf
             self.prf_msg    = self.sha256_prf_msg
-            self.f          = self.sha256_f
-            self.hh         = self.sha256_f
-            self.tl         = self.sha256_f
+            self.h_f            = self.sha256_f
+            self.h_h            = self.sha256_f
+            self.h_t            = self.sha256_f
         elif hashname == 'SHA2' and self.n > 16:
             self.h_msg      = self.sha512_h_msg
             self.prf        = self.sha256_prf
             self.prf_msg    = self.sha512_prf_msg
-            self.f          = self.sha256_f
-            self.hh         = self.sha512_h
-            self.tl         = self.sha512_h
+            self.h_f            = self.sha256_f
+            self.h_h            = self.sha512_h
+            self.h_t            = self.sha512_h
 
         #   equations 5.1 - 5.4
         self.w      = 2**self.lg_w
@@ -272,7 +272,7 @@ class SLH_DSA:
         t = x
         for j in range(i, i + s):
             adrs.set_hash_address(j)
-            t = self.f(pk_seed, adrs, t)
+            t = self.h_f(pk_seed, adrs, t)
         return t
 
     def wots_pkgen(self, sk_seed, pk_seed, adrs):
@@ -290,7 +290,7 @@ class SLH_DSA:
         wotspk_adrs = adrs.copy()
         wotspk_adrs.set_type_and_clear(ADRS.WOTS_PK)
         wotspk_adrs.set_key_pair_address(adrs.get_key_pair_address())
-        pk = self.tl(pk_seed, wotspk_adrs, tmp)
+        pk = self.h_t(pk_seed, wotspk_adrs, tmp)
         return pk
 
     def wots_sign(self, m, sk_seed, pk_seed, adrs):
@@ -312,6 +312,7 @@ class SLH_DSA:
             sk = self.prf(pk_seed, sk_seed, sk_adrs)
             adrs.set_chain_address(i)
             sig += self.chain(sk, 0, msg[i], pk_seed, adrs)
+
         return sig
 
     def wots_pk_from_sig(self, sig, m, pk_seed, adrs):
@@ -333,7 +334,7 @@ class SLH_DSA:
         wots_pk_adrs    = adrs.copy()
         wots_pk_adrs.set_type_and_clear(ADRS.WOTS_PK)
         wots_pk_adrs.set_key_pair_address(adrs.get_key_pair_address())
-        pk_sig  =   self.tl(pk_seed, wots_pk_adrs, tmp)
+        pk_sig  =   self.h_t(pk_seed, wots_pk_adrs, tmp)
         return  pk_sig
 
     def xmss_sign(self, m, sk_seed, idx, pk_seed, adrs):
@@ -348,7 +349,6 @@ class SLH_DSA:
         sig = self.wots_sign(m, sk_seed, pk_seed, adrs)
         sig_xmss = sig + auth
         return sig_xmss
-
 
     def xmss_node(self, sk_seed, i, z, pk_seed, adrs):
         """ Algorithm 8: xmss_node(SK.seed, i, z, PK.seed, ADRS).
@@ -365,7 +365,7 @@ class SLH_DSA:
             adrs.set_type_and_clear(ADRS.TREE)
             adrs.set_tree_height(z)
             adrs.set_tree_index(i)
-            node = self.hh(pk_seed, adrs, lnode + rnode)
+            node = self.h_h(pk_seed, adrs, lnode + rnode)
         return node
 
     def xmss_pk_from_sig(self, idx, sig_xmss, m, pk_seed, adrs):
@@ -384,11 +384,12 @@ class SLH_DSA:
             auth_k = auth[k*self.n:(k+1)*self.n]
             if (idx >> k) & 1 == 0:
                 adrs.set_tree_index(adrs.get_tree_index() // 2)
-                node_1  = self.hh(pk_seed, adrs, node_0 + auth_k)
+                node_1  = self.h_h(pk_seed, adrs, node_0 + auth_k)
             else:
                 adrs.set_tree_index((adrs.get_tree_index() - 1) // 2)
-                node_1  = self.hh(pk_seed, adrs, auth_k + node_0)
+                node_1  = self.h_h(pk_seed, adrs, auth_k + node_0)
             node_0 = node_1
+
         return node_0
 
     def ht_sign(self, m, sk_seed, pk_seed, i_tree, i_leaf):
@@ -419,6 +420,7 @@ class SLH_DSA:
         adrs.set_tree_address(i_tree)
         sig_tmp = sig_ht[0:(self.hp + self.len)*self.n]
         node    = self.xmss_pk_from_sig(i_leaf, sig_tmp, m, pk_seed, adrs)
+
         hp_m    = ((1 << self.hp) - 1)
         for j in range(1, self.d):
             i_leaf  =   i_tree & hp_m
@@ -450,13 +452,13 @@ class SLH_DSA:
             sk = self.fors_sk_gen(sk_seed, pk_seed, adrs, i)
             adrs.set_tree_height(0)
             adrs.set_tree_index(i)
-            node = self.f(pk_seed, adrs, sk)
+            node = self.h_f(pk_seed, adrs, sk)
         else:
             lnode = self.fors_node(sk_seed, 2 * i, z - 1, pk_seed, adrs)
             rnode = self.fors_node(sk_seed, 2 * i + 1, z - 1, pk_seed, adrs)
             adrs.set_tree_height(z)
             adrs.set_tree_index(i)
-            node = self.hh(pk_seed, adrs, lnode + rnode)
+            node = self.h_h(pk_seed, adrs, lnode + rnode)
         return node
 
     def fors_sign(self, md, sk_seed, pk_seed, adrs):
@@ -464,7 +466,6 @@ class SLH_DSA:
             Generate a FORS signature."""
         sig_fors = b''
         indices = self.base_2b(md, self.a, self.k)
-
         for i in range(self.k):
             sig_fors += self.fors_sk_gen(sk_seed, pk_seed, adrs,
                                             (i << self.a) + indices[i])
@@ -491,7 +492,7 @@ class SLH_DSA:
             sk      = get_sk(sig_fors, i)
             adrs.set_tree_height(0)
             adrs.set_tree_index((i << self.a) + indices[i])
-            node_0  = self.f(pk_seed, adrs, sk)
+            node_0  = self.h_f(pk_seed, adrs, sk)
 
             auth    = get_auth(sig_fors, i)
             for j in range(self.a):
@@ -499,17 +500,17 @@ class SLH_DSA:
                 adrs.set_tree_height(j + 1)
                 if (indices[i] >> j) & 1 == 0:
                     adrs.set_tree_index(adrs.get_tree_index() // 2)
-                    node_1 = self.hh(pk_seed, adrs, node_0 + auth_j)
+                    node_1 = self.h_h(pk_seed, adrs, node_0 + auth_j)
                 else:
                     adrs.set_tree_index((adrs.get_tree_index() - 1) // 2)
-                    node_1 = self.hh(pk_seed, adrs, auth_j + node_0)
+                    node_1 = self.h_h(pk_seed, adrs, auth_j + node_0)
                 node_0 = node_1
             root += node_0
 
         fors_pk_adrs = adrs.copy()
         fors_pk_adrs.set_type_and_clear(ADRS.FORS_ROOTS)
         fors_pk_adrs.set_key_pair_address(adrs.get_key_pair_address())
-        pk  = self.tl(pk_seed, fors_pk_adrs, root)
+        pk  = self.h_t(pk_seed, fors_pk_adrs, root)
         return pk
 
     def keygen(self):
@@ -521,11 +522,9 @@ class SLH_DSA:
         sk_seed = seed[0:self.n]
         sk_prf  = seed[self.n:2*self.n]
         pk_seed = seed[2*self.n:]
-
         adrs    = ADRS()
         adrs.set_layer_address(self.d - 1)
         pk_root = self.xmss_node(sk_seed, 0, self.hp, pk_seed, adrs)
-
         sk = sk_seed + sk_prf + pk_seed + pk_root
         pk = pk_seed + pk_root
         return (pk, sk)     #   Alg 17 has (sk, pk)
