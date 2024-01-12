@@ -337,19 +337,6 @@ class SLH_DSA:
         pk_sig  =   self.h_t(pk_seed, wots_pk_adrs, tmp)
         return  pk_sig
 
-    def xmss_sign(self, m, sk_seed, idx, pk_seed, adrs):
-        """ Algorithm 9: xmss_sign(M, SK.seed, idx, PK.seed, ADRS).
-            Generate an XMSS signature."""
-        auth = b''
-        for j in range(self.hp):
-            k = (idx >> j) ^ 1
-            auth += self.xmss_node(sk_seed, k, j, pk_seed, adrs)
-        adrs.set_type_and_clear(ADRS.WOTS_HASH)
-        adrs.set_key_pair_address(idx)
-        sig = self.wots_sign(m, sk_seed, pk_seed, adrs)
-        sig_xmss = sig + auth
-        return sig_xmss
-
     def xmss_node(self, sk_seed, i, z, pk_seed, adrs):
         """ Algorithm 8: xmss_node(SK.seed, i, z, PK.seed, ADRS).
             Compute the root of a Merkle subtree of WOTS+ public keys."""
@@ -367,6 +354,19 @@ class SLH_DSA:
             adrs.set_tree_index(i)
             node = self.h_h(pk_seed, adrs, lnode + rnode)
         return node
+
+    def xmss_sign(self, m, sk_seed, idx, pk_seed, adrs):
+        """ Algorithm 9: xmss_sign(M, SK.seed, idx, PK.seed, ADRS).
+            Generate an XMSS signature."""
+        auth = b''
+        for j in range(self.hp):
+            k = (idx >> j) ^ 1
+            auth += self.xmss_node(sk_seed, k, j, pk_seed, adrs)
+        adrs.set_type_and_clear(ADRS.WOTS_HASH)
+        adrs.set_key_pair_address(idx)
+        sig = self.wots_sign(m, sk_seed, pk_seed, adrs)
+        sig_xmss = sig + auth
+        return sig_xmss
 
     def xmss_pk_from_sig(self, idx, sig_xmss, m, pk_seed, adrs):
         """ Algorithm 10: xmss_PKFromSig(idx, SIG_XMSS, M, PK.seed, ADRS).
